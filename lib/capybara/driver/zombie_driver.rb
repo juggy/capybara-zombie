@@ -154,7 +154,7 @@ if(tagName == "TEXTAREA") {
 
     ids = socket_send <<-JS
 var sets = [];
-browser.xpath(#{args}).value.forEach(function(node){
+browser.#{Capybara.default_selector.to_s}(#{args}).value.forEach(function(node){
   pointers.push(node);
   sets.push(pointers.length - 1);
 });
