@@ -10,6 +10,14 @@ class Capybara::Driver::Zombie < Capybara::Driver::Base
       find("./ancestor-or-self::*[contains(@style, 'display:none') or contains(@style, 'display: none')]").empty?
     end
 
+    def checked?
+      native_json(".checked")
+    end
+
+    def selected?
+      native_json(".selected")
+    end
+
     def [](name)
       name = name.to_s
       name = "className" if name == "class"
@@ -84,6 +92,23 @@ if(tagName == "TEXTAREA") {
       browser_wait :fire, "click".inspect, native_ref
     end
 
+    def drag_to(element)
+      # jQuery checks that (which == 1) to determine that the left button is pressed
+      # jQuery uses $.ui.intersect to test for intersection
+      fire "mousedown",    self, {}, {:button => 0, :which => 1, :pageX => 0, :pageY => 0}
+      fire "mousemove", element, {}, {:button => 0, :which => 1, :pageX => 1, :pageY => 1}
+      fire "mousemove", element, {}, {:button => 0, :which => 1, :pageX => 1, :pageY => 1}
+      fire   "mouseup", element, {}, {:button => 0, :which => 1, :pageX => 1, :pageY => 1}
+    end
+
+    def native_ref
+      "pointers[#{@native}]"
+    end
+
+    def trigger(event)
+      fire(event.to_s, self)
+    end
+
     private
 
     def select_node
@@ -94,9 +119,11 @@ if(tagName == "TEXTAREA") {
       socket_json "#{native_ref}#{call}"
     end
 
-    def native_ref
-      "pointers[#{@native}]"
+    def fire(name, target, options={}, attributes=nil)
+      (options[:attributes]||={}).merge!(attributes) if attributes
+      browser_wait :fire, name.inspect, target.native_ref, encode(options)
     end
+
   end
 
   class Headers
@@ -136,9 +163,8 @@ if(tagName == "TEXTAREA") {
     socket_json "browser.html()"
   end
 
-  # TODO Is this really correct?
   def source
-    socket_json "browser.document.outerHTML"
+    socket_json "browser.source"
   end
 
   def current_url
@@ -146,7 +172,11 @@ if(tagName == "TEXTAREA") {
   end
 
   def evaluate_script(script)
-    socket_json script
+    socket_json(_evaluate_script_command(script))
+  end
+
+  def execute_script(script)
+    socket_write(_evaluate_script_command(script))
   end
 
   def find(selector, context=nil)
@@ -172,6 +202,10 @@ stream.end(JSON.stringify(sets));
 
   def url(path)
     rack_server.url(path)
+  end
+
+  def _evaluate_script_command(script)
+    "browser.evaluate(#{encode(script)})"
   end
 end
 
