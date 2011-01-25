@@ -168,7 +168,7 @@ if(tagName == "TEXTAREA") {
   end
 
   def current_url
-    socket_json "browser.location.toString()"
+    (socket_json "[browser.location.href]")[0]
   end
 
   def evaluate_script(script)
@@ -181,7 +181,6 @@ if(tagName == "TEXTAREA") {
 
   def find(selector, context=nil)
     args = [encode(selector), context].compact.join(",")
-
     ids = socket_send <<-JS
 var sets = [];
 browser.#{Capybara.default_selector.to_s}(#{args}).value.forEach(function(node){
