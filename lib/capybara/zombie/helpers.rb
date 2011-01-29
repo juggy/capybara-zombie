@@ -11,7 +11,12 @@ module Capybara
       end
 
       def decode(value)
+        begin
         MultiJson.decode(value)
+        rescue => e
+          #for some reasons strings are not parsed properly
+          return value.gsub("\"", "")
+        end
       end
 
       # Send something to the socket, you are responsible to close the stream.

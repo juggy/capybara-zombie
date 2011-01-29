@@ -39,7 +39,7 @@ if(#{name.to_s == "value"} && #{native_ref}.tagName == "SELECT" && #{native_ref}
     end
 
     def text
-      native_json(".textContent")
+      native_json(".innerHTML")
     end
 
     def tag_name
@@ -55,19 +55,20 @@ if(#{name.to_s == "value"} && #{native_ref}.tagName == "SELECT" && #{native_ref}
     end
 
     def set(value)
-      socket_write <<-JS
+      socket_send <<-JS
 var node = #{native_ref},
     tagName = node.tagName;
 if(tagName == "TEXTAREA") {
   node.textContent = #{encode(value)};
+  browser.fire("change", node, function(){stream.end()});
 } else {
   var type = node.getAttribute('type');
   if(type == "checkbox") {
-    #{encode(value)} ? browser.check(node) : browser.uncheck(node);
+    #{encode(value)} ? browser.check(node, function(){stream.end()}) : browser.uncheck(node, function(){stream.end()});
   } else if(type == "radio") {
-    browser.choose(node);
+    browser.choose(node, function(){stream.end()});
   } else {
-    browser.fill(node, #{encode(value)});
+    browser.fill(node, #{encode(value)}, function(){stream.end()});
   }
 }
       JS
