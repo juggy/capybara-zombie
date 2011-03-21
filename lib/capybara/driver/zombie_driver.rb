@@ -1,4 +1,5 @@
 require "capybara/zombie/helpers"
+require "capybara/zombie/executer"
 
 class Capybara::Driver::Zombie < Capybara::Driver::Base
   include Capybara::Zombie::Helpers
@@ -141,11 +142,20 @@ if(tagName == "TEXTAREA") {
 
   attr_reader :app, :rack_server, :options
 
+  class << self
+    def zombie
+      @zombie ||= Capybara::Zombie::Executer.new
+    end
+  end
+
   def initialize(app, options={})
     @app = app
     @options = options
     @rack_server = Capybara::Server.new(@app)
     @rack_server.boot if Capybara.run_server
+    
+    self.class.zombie.animate!
+    at_exit { self.class.zombie.kill }
   end
 
   def visit(path)
@@ -157,7 +167,7 @@ if(tagName == "TEXTAREA") {
   end
 
   def status_code
-    socket_json "browser.lastResponse.status"
+    socket_json "browser.statusCode"
   end
 
   def body
